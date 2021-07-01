@@ -17,5 +17,9 @@ path = "src/fl_text_display_colors.rs"
 name = "fl_right_click_context_menu"
 path = "src/fl_right_click_context_menu.rs"
 
+[[bin]]
+name = "fl_browser_with_columns"
+path = "src/fl_browser_with_columns.rs"
+
 [dependencies]
-fltk = "1.0.20"
+fltk = "1.0.21"

@@ -1,68 +1,57 @@
 use fltk::{
-    app::{channel, event_button, event_x, event_y, App, Scheme, Sender},
-    enums::{CallbackTrigger, Event},
+    app::{App, Scheme},
+    enums::Shortcut,
     input::MultilineInput,
-    menu::MenuItem,
-    prelude::{GroupExt, InputExt, WidgetBase, WidgetExt},
+    menu::{MenuButton, MenuButtonType, MenuFlag},
+    prelude::{GroupExt, InputExt, MenuExt, WidgetExt},
     window::Window,
 };
 
 struct MyApp {
     _window: Window,
+    _menu: MenuButton,
     _input: MultilineInput,
 }
 
-#[derive(Clone, Copy)]
-enum Message {
-    ClickDoThing1,
-    ClickDoThing2,
-    ClickQuit,
+fn callback(menu: &mut MenuButton) {
+    let text = menu.choice().unwrap();
+    match &text[..] {
+        "Do thing#1" => println!("You choose to do a thing."),
+        "Do thing#2" => println!("You choose to do a different thing."),
+        "Quit" => std::process::exit(0),
+        _ => println!("unknown"),
+    }
 }
 
 impl MyApp {
-    fn new(sender: Sender<Message>) -> Self {
+    fn new() -> Self {
         let mut window = Window::default()
             .with_size(580, 460)
             .with_label("Simple popup menu");
-        window.set_trigger(CallbackTrigger::Release);
-
         window.set_tooltip("Use right click for popup menu ...");
-        window.handle(move |_, event| {
-            //let event_pos = (event_x(), event_y());
-            match event {
-                Event::Released if event_button() == 3 => {
-                    let menu = MenuItem::new(&["Do thing#1", "Do thing#2", "Quit"]);
-                    if let Some(item) = menu.popup(event_x(), event_y()) {
-                        match &item.label().unwrap()[..] {
-                            "Do thing#1" => {
-                                sender.send(Message::ClickDoThing1);
-                            }
-                            "Do thing#2" => {
-                                sender.send(Message::ClickDoThing2);
-                            }
-                            "Quit" => {
-                                sender.send(Message::ClickQuit);
-                            }
-                            _ => {}
-                        }
-                    }
-                    true
-                }
-                _ => false,
-            }
-        });
 
         let mut input = MultilineInput::default()
             .with_pos(100, 200)
             .with_size(350, 50)
             .with_label("Input");
-        input.set_value("Right-click anywhere on gray window area\nfor popup menu");
 
+        let mut menu = MenuButton::default()
+            .with_size(580, 460)
+            .with_pos(0, 0)
+            .with_label("Popu Menu");
+
+        menu.set_type(MenuButtonType::Popup3);
+        menu.add("Do thing#1", Shortcut::Button1, MenuFlag::Normal, callback);
+        menu.add("Do thing#2", Shortcut::Button2, MenuFlag::Normal, callback);
+        menu.add("Quit", Shortcut::from_char('q'), MenuFlag::Normal, callback);
+
+        input.set_value("Right-click anywhere on gray window area\nfor popup menu");
         window.end();
         window.show();
 
         let app = MyApp {
             _window: window,
+            _menu: menu,
             _input: input,
         };
 
@@ -72,20 +61,6 @@ impl MyApp {
 
 fn main() {
     let app = App::default().with_scheme(Scheme::Gtk);
-    let (sender, receiver) = channel::<Message>();
-    let _my_app = MyApp::new(sender);
-    while app.wait() {
-        match receiver.recv() {
-            Some(Message::ClickDoThing1) => {
-                println!("You choose to do a thing");
-            }
-            Some(Message::ClickDoThing2) => {
-                println!("You choose to do a different thing");
-            }
-            Some(Message::ClickQuit) => {
-                std::process::exit(0);
-            }
-            None => {}
-        }
-    }
+    let _my_app = MyApp::new();
+    app.run().unwrap();
 }
